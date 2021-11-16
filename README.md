@@ -13,14 +13,10 @@ JSON
 | Name        | Description                         | Required? |
 | ----------- | ----------------------------------- | --------- |
 | url         | URL to Shorten.                     | Yes       |
-| custom_path | Path to follow top-level domain.    | No        |
-| expire_by   | Datetime Short URL will be deleted. | No        |
 #### Request body example
 ```
 {
-  "url": "https://canvas.oregonstate.edu/groups/463846/discussion_topics/9626874",
-  "custom_path": "week-2-discussion",
-  "expire_by": "2021-12-04T11:59:00.000Z"
+  "url": "https://canvas.oregonstate.edu/groups/463846/discussion_topics/9626874"
 }
 ```
 ### Response
@@ -32,16 +28,15 @@ JSON
 | Successful | 201 Created                         |                                                                                                                                                                                                          |
 | Failure    | 415 Unsupported Media Type          | If the client sent a MIME type other than ‘application/json’.                                                                                                                                            |  
 | Failure    | 406 Not Acceptable                  | If the client accepts a MIME type other than ‘application/json’.                                                                                                                                         |
-| Failure    | 400 Bad Request                     | If the request is missing any required attributes.<br />If the url is not a valid http/https URL.<br />If custom_path is not a string or is empty.<br />If expires_by is not a valid date in the future. |
+| Failure    | 400 Bad Request                     | If the request is missing any required attributes.<br />If the url is not a valid http/https URL. |
 #### Response Examples
 ##### Success
 ```
 Status: 201 Created
 
 {
-  "short_url": "<protocol>:<hostname>/week-2-discussion",
-  "url": "https://canvas.oregonstate.edu/groups/463846/discussion_topics/9626874",
-  "expires": "2021-12-04T11:59:00.000Z"
+  "short_url": "<protocol>:<hostname>/a1b2c3",
+  "url": "https://canvas.oregonstate.edu/groups/463846/discussion_topics/9626874"
 }
 ```
 ##### Failure
