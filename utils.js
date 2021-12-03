@@ -2,9 +2,9 @@ function setErrorState(res, statusCode, message) {
   res.status(statusCode).locals.errorMsg = message;
 }
 
-exports.handleClientError = function(res, statusCode, message, next) {
+exports.handleClientError = function(res, statusCode, message) {
   setErrorState(res, statusCode, message);
-  next();
+  res.set('Content-Type', 'application/json').send({Error: res.locals.errorMsg});
 }
 
 exports.handleServerError = function(res, next, error) {

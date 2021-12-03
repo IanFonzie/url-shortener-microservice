@@ -33,6 +33,7 @@ app.use('/', indexRouter);
 
 // Handle 4xx errors.
 app.use((req, res, next) => {
+  res.status(404).locals.errorMsg = 'The requested resource could not be found.';
   res.set('Content-Type', 'application/json').send({Error: res.locals.errorMsg});
 });
   

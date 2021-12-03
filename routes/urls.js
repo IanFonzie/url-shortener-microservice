@@ -73,36 +73,52 @@ function invalidPropsMsg(problems) {
   return errorMsg.trimRight();
 }
 
+function invalidAcceptMsg(req) {
+  return `Unsupported 'Accept' header: '${req.get('Accept')}'. Must accept `
+  + `'application/json'.`;
+}
+
+function invalidContentTypeMsg(req) {
+  return `Unsupported media type: '${req.get('Content-Type')}'. Payload must be `
+  + `'application/json'.`;
+}
+
+function buildShortURL(req, key) {
+  return `${req.serverName()}/${parseInt(key.id, 10).toString(36)}`;
+}
+
+function validateRequest(req) {
+  if (isNotAcceptable(req, 'application/json')) {
+    // Assert client accepts 'application/json'.
+    throw {status: 406, message: invalidAcceptMsg(req)};
+  } else if (isUnsupportedMediaType(req, 'application/json')) {
+    // Assert client sent JSON.
+    throw {status: 415, message: invalidContentTypeMsg(req)};
+  }
+
+  // Assert expected properties exist.
+  const inputURL = getURLProps(req);
+  if (inputURL.URL === undefined) {
+    throw {status: 400, message: URL_REQUIRED};
+  }
+
+  // Validate expected properties.
+  const problems = invalidProps(inputURL);
+  if (problems) {
+    throw {status: 400, message: invalidPropsMsg(problems)};
+  }
+
+  return inputURL;
+}
+
 /* Create Short URL. */
 router.post('/', async (req, res, next) => {
-  // Assert client accepts 'application/json'.
-  if (isNotAcceptable(req, 'application/json')) {
-    const errorMsg = `Unsupported 'Accept' header: '${req.get('Accept')}'. Must accept 'application/json'.`;
-    handleClientError(res, 406, errorMsg, next);
-    return;
-  }
-
-  // Assert client sent JSON.
-  if (isUnsupportedMediaType(req, 'application/json')) {
-    const errorMsg = `Unsupported media type: '${req.get('Content-Type')}'. Payload must be 'application/json'.`;
-    handleClientError(res, 415, errorMsg, next);
-    return;
-  }
-
-  // Get expected properties.
-  const longURL = getURLProps(req);
-
-  // Check if URL is missing.
-  if (longURL.URL === undefined) {
-    handleClientError(res, 400, URL_REQUIRED, next);
-    return;
-  }
-
-  const problems = invalidProps(longURL);
-  if (problems) {
-    // Problem with a supplied value.
-    handleClientError(res, 400, invalidPropsMsg(problems), next);
-    return;
+  // Get valid long URL or handle its errors.
+  let longURL;
+  try {
+    longURL = validateRequest(req);
+  } catch (err) {
+    return handleClientError(res, err.status, err.message);
   }
 
   // Insert the URL.
@@ -110,13 +126,11 @@ router.post('/', async (req, res, next) => {
   try {
     await datastore.insert({key, data: {url: longURL.URL}});
   } catch (err) {
-    handleServerError(res, next, err);
-    return;
+    return handleServerError(res, next, err);
   }
 
   // Construct short URL.
-  const shortURL = `${req.serverName()}/${parseInt(key.id, 10).toString(36)}`;
-  res.send(201, {short_url: shortURL});
+  res.send(201, {short_url: buildShortURL(req, key)});
 });
 
 module.exports = router;
